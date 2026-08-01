@@ -1,7 +1,7 @@
 import "./globals.css";
 import Header from "../components/Header";
 import Footer from "../components/Footer"; 
-
+import { Analytics } from "@vercel/analytics/react"; 
 export const metadata = {
   title: "Lake Estudio",
   description: "Centro de Belleza y Estética",
@@ -18,6 +18,9 @@ export default function RootLayout({ children }) {
         </div>
 
         <Footer />
+        
+        
+        <Analytics /> 
         
       </body>
     </html>
