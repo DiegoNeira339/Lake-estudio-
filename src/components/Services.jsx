@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function Services() {
   const [selectedService, setSelectedService] = useState(null);
-  // Nuevo estado para saber qué foto/video del carrusel estamos viendo
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const servicesList = [
@@ -13,10 +12,9 @@ export default function Services() {
       title: "Alisado Profesional",
       description: "Luce un cabello liso, brillante y sin frizz por meses. Trabajamos con productos de alta calidad.",
       detalleFull: "Nuestro alisado profesional incluye lavado de limpieza profunda, aplicación del producto alisante, sellado térmico y un masaje capilar de hidratación. Ideal para olvidarte de la plancha.",
-      media: "/alisado_1.mp4", // Portada
+      media: "/alisado_1.mp4",
       isVideo: true,
       category: "Pelo",
-      // 👇 La galería para el modal 👇
       gallery: [
         { src: "/alisado_1.mp4", type: "video" },
         { src: "/alisado_2.mp4", type: "video" }
@@ -27,10 +25,9 @@ export default function Services() {
       title: "Limpieza Facial",
       description: "Protocolo de 5 pasos para renovar tu rostro. Opción a sumar drenaje o masaje reafirmante.",
       detalleFull: "El servicio base ($20.000) incluye:\n1. Higiene facial\n2. Exfoliación enzimática\n3. Desincrustación\n4. Mascarilla calmante\n5. Sellado\n\n✨ Extras ($5.000 c/u):\nPuedes complementar tu limpieza con un Drenaje Linfático o un Masaje Integral Reafirmante.",
-      media: "/despues_limpieza.jpeg", // Portada
+      media: "/despues_limpieza.jpeg", 
       isVideo: false,
       category: "Estética",
-      // 👇 La galería para el modal 👇
       gallery: [
         { src: "/antes_limpieza.jpeg", type: "image" },
         { src: "/despues_limpieza.jpeg", type: "image" }
@@ -41,10 +38,9 @@ export default function Services() {
       title: "Diseño de Cejas",
       description: "Enmarca tu mirada con un perfilado adaptado a la forma y facciones de tu rostro.",
       detalleFull: "Realizamos un servicio especializado en tus cejas para resaltar tu mirada y armonizar las facciones de tu rostro. Cuidamos cada detalle para entregarte un resultado simétrico, natural y perfecto.",
-      media: "/cejas_3.jpeg", // Portada (la que más vende)
+      media: "/cejas_3.jpeg", 
       isVideo: false,
       category: "Estética",
-      // 👇 La galería para el modal 👇
       gallery: [
         { src: "/cejas_3.jpeg", type: "image" },
         { src: "/cejas_2.jpeg", type: "image" },
@@ -53,14 +49,14 @@ export default function Services() {
     }
   ];
 
-  // Funciones para abrir el modal y cambiar de foto
+  
   const handleOpenModal = (service) => {
     setSelectedService(service);
-    setCurrentIndex(0); // Siempre arranca en la primera foto al abrir
+    setCurrentIndex(0); 
   };
 
   const nextMedia = (e) => {
-    e.stopPropagation(); // Evita que se cierre el modal al hacer clic en la flecha
+    e.stopPropagation(); 
     setCurrentIndex((prev) => (prev === selectedService.gallery.length - 1 ? 0 : prev + 1));
   };
 
@@ -164,7 +160,6 @@ export default function Services() {
                 ✕
               </button>
 
-              {/* 👇 ZONA DEL CARRUSEL 👇 */}
               <div className="w-full md:w-1/2 h-64 md:h-auto relative bg-lake-dark group">
                 
                 {selectedService.gallery[currentIndex].type === "video" ? (
@@ -173,7 +168,7 @@ export default function Services() {
                   <img key={selectedService.gallery[currentIndex].src} src={selectedService.gallery[currentIndex].src} alt={selectedService.title} className="w-full h-full object-cover" />
                 )}
 
-                {/* Flechas de navegación (solo se muestran si hay más de 1 archivo) */}
+                {}
                 {selectedService.gallery.length > 1 && (
                   <>
                     <button onClick={prevMedia} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-lake-dark w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-md transition-all opacity-0 group-hover:opacity-100">

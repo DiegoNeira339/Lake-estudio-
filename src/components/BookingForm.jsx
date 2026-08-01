@@ -1,19 +1,61 @@
 "use client";
-import { useState } from "react";
-import emailjs from '@emailjs/browser';
+import { useState, useEffect } from "react";
 import Swal from 'sweetalert2';
 
+// Este es tu diccionario de horarios (puede ir fuera del componente porque nunca cambia)
+const horariosPorDia = {
+  0: ["14:00", "16:00", "18:00"], // Domingo
+  1: ["14:00", "16:00", "18:00", "20:00"], // Lunes
+  2: ["14:00", "16:00", "18:00", "20:00"], // Martes
+  3: ["14:00", "16:00", "18:00", "20:00"], // Miércoles
+  4: ["11:00", "14:00", "16:00", "18:00", "20:00"], // Jueves
+  5: ["14:00", "16:00", "18:00", "20:00"], // Viernes
+  6: ["11:00", "14:00", "16:00", "18:00", "20:00"], // Sábado
+};
+
 export default function BookingForm() {
+  // --- 1. ESTADOS (Todos adentro de la función principal) ---
   const [formData, setFormData] = useState({
     servicio: "",
-    fechaHora: "",
     nombre: "",
     whatsapp: "",
     email: "",
   });
-
+  
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Estados para el nuevo calendario
+  const [reservasOcupadas, setReservasOcupadas] = useState([]);
+  const [fechaSeleccionada, setFechaSeleccionada] = useState("");
+  const [horaSeleccionada, setHoraSeleccionada] = useState("");
 
+  // --- 2. EL CHISMOSO (Busca las horas tomadas en la BD al cargar la página) ---
+  useEffect(() => {
+    const cargarReservas = async () => {
+      try {
+        const response = await fetch('/api/reservas');
+        if (response.ok) {
+          const data = await response.json();
+          setReservasOcupadas(data.map(res => res.fecha_hora));
+        }
+      } catch (error) {
+        console.error("No se pudieron cargar las reservas", error);
+      }
+    };
+    cargarReservas();
+  }, []);
+
+  // --- 3. LÓGICA DEL DÍA SELECCIONADO ---
+  let horasDelDiaSeleccionado = [];
+  if (fechaSeleccionada) {
+    const [year, month, day] = fechaSeleccionada.split('-');
+    const fecha = new Date(year, month - 1, day);
+    const numeroDeDia = fecha.getDay(); 
+    
+    horasDelDiaSeleccionado = horariosPorDia[numeroDeDia];
+  }
+
+  // --- 4. FUNCIONES DEL FORMULARIO ---
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -21,10 +63,22 @@ export default function BookingForm() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault(); 
     
-    // ✨ EL NUEVO SEGURO CON ESTILO ✨
+    // Nueva validación: Asegurarnos de que sí eligieron una hora
+    if (!fechaSeleccionada || !horaSeleccionada) {
+      Swal.fire({
+        title: 'Falta la hora',
+        text: 'Por favor, asegúrate de elegir un día y hacer clic en una hora disponible.',
+        icon: 'warning',
+        confirmButtonColor: '#e53e3e',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+   
+
     const whatsappRegex = /^[+0-9\s]{8,15}$/;
     if (!whatsappRegex.test(formData.whatsapp)) {
       Swal.fire({
@@ -39,22 +93,20 @@ export default function BookingForm() {
 
     setIsLoading(true);
 
-    const serviceID = "service_4mib3hr"; 
-    const templateID = "template_9i057x4";
-    const publicKey = "-NeKFisAL3qSyfkw4";
+    try {
+      const response = await fetch('/api/reservas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Aquí juntamos la fecha y la hora para mandarlas a Supabase
+        body: JSON.stringify({
+          ...formData,
+          fechaHora: `${fechaSeleccionada}T${horaSeleccionada}`
+        }),
+      });
 
-    const templateParams = {
-      nombre: formData.nombre,
-      servicio: formData.servicio,
-      fechaHora: formData.fechaHora.replace("T", " a las "),
-      whatsapp: formData.whatsapp,
-      email: formData.email,
-    };
-
-    emailjs.send(serviceID, templateID, templateParams, publicKey)
-      .then((response) => {
-        console.log("¡Correo enviado con éxito!", response.status, response.text);
-        
+      if (response.ok) {
         Swal.fire({
           title: '¡Reserva Enviada!',
           text: `¡Listo ${formData.nombre}! Tu reserva ha sido enviada al estudio. Te contactarán pronto.`,
@@ -62,25 +114,35 @@ export default function BookingForm() {
           confirmButtonColor: '#2d3748', 
           confirmButtonText: '¡Súper!'
         });
+ 
+        // Limpiamos todo el formulario
+        setFormData({ servicio: "", nombre: "", whatsapp: "", email: "" });
+        setFechaSeleccionada("");
+        setHoraSeleccionada("");
         
-        setFormData({ servicio: "", fechaHora: "", nombre: "", whatsapp: "", email: "" });
-      })
-      .catch((error) => {
-        console.error("Error al enviar el correo:", error);
-        
-        Swal.fire({
-          title: 'Ups...',
-          text: 'Hubo un problema al enviar la reserva. Por favor intenta de nuevo.',
-          icon: 'error',
-          confirmButtonColor: '#e53e3e',
-          confirmButtonText: 'Cerrar'
-        });
-      })
-      .finally(() => {
-        setIsLoading(false);
+        // Y bloqueamos la hora que acaban de tomar para que no se pueda clickear de nuevo
+        setReservasOcupadas(prev => [...prev, `${fechaSeleccionada}T${horaSeleccionada}`]);
+
+      } else {
+        throw new Error("El servidor falló al procesar la solicitud");
+      }
+
+    } catch (error) {
+      console.error("Error al conectar con el backend:", error);
+      
+      Swal.fire({
+        title: 'Ups...',
+        text: 'Hubo un problema al enviar la reserva. Por favor intenta de nuevo.',
+        icon: 'error',
+        confirmButtonColor: '#e53e3e',
+        confirmButtonText: 'Cerrar'
       });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // --- 5. INTERFAZ GRÁFICA ---
   return (
     <section id="agendar" className="w-full max-w-3xl mx-auto px-6 py-16">
       <div className="bg-lake-pink rounded-5xl p-8 md:p-12 shadow-soft border-4 border-lake-white">
@@ -111,17 +173,54 @@ export default function BookingForm() {
             </select>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-lake-dark font-bold ml-2">Fecha y Hora</label>
-            <input 
-              type="datetime-local" 
-              name="fechaHora"
-              value={formData.fechaHora}
-              onChange={handleChange}
-              className="p-4 rounded-2xl border-none outline-none focus:ring-4 focus:ring-lake-matcha bg-lake-white text-lake-dark font-medium cursor-pointer" 
-              required
-            />
+          {/* --- NUEVO SISTEMA DE CALENDARIO --- */}
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-lake-dark font-bold ml-2">Elige el Día</label>
+              <input 
+                type="date" 
+                min={new Date().toISOString().split("T")[0]} 
+                value={fechaSeleccionada}
+                onChange={(e) => {
+                  setFechaSeleccionada(e.target.value);
+                  setHoraSeleccionada(""); 
+                }}
+                className="p-4 rounded-2xl border-none outline-none focus:ring-4 focus:ring-lake-matcha bg-lake-white text-lake-dark cursor-pointer"
+                required
+              />
+            </div>
+
+            {fechaSeleccionada && (
+              <div className="flex flex-col gap-2 mt-2">
+                <label className="text-lake-dark font-bold ml-2">Elige la Hora</label>
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                  {horasDelDiaSeleccionado.map((hora) => {
+                    const fechaHoraActual = `${fechaSeleccionada}T${hora}`;
+                    const estaOcupada = reservasOcupadas.includes(fechaHoraActual);
+
+                    return (
+                      <button
+                        key={hora}
+                        type="button"
+                        disabled={estaOcupada}
+                        onClick={() => setHoraSeleccionada(hora)}
+                        className={`py-3 rounded-xl font-bold transition-all ${
+                          estaOcupada 
+                            ? "bg-gray-200 text-gray-400 cursor-not-allowed line-through" 
+                            : horaSeleccionada === hora 
+                              ? "bg-lake-matcha text-lake-dark shadow-md scale-105" 
+                              : "bg-lake-white text-lake-dark hover:bg-green-100" 
+                        }`}
+                      >
+                        {hora}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
+          {/* --- FIN NUEVO SISTEMA DE CALENDARIO --- */}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-2">
@@ -172,7 +271,7 @@ export default function BookingForm() {
                 : "bg-lake-matcha text-lake-dark hover:scale-[1.02] hover:shadow-md"
               }`}
           >
-            {isLoading ? "Enviando reserva... ⏳" : "Confirmar Reserva ✨"}
+            {isLoading ? "Enviando reserva... ⏳" : "Confirmar Reserva"}
           </button>
           
         </form>

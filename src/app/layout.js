@@ -1,6 +1,6 @@
 import "./globals.css";
 import Header from "../components/Header";
-import Footer from "../components/Footer"; // Importamos el Footer
+import Footer from "../components/Footer"; 
 
 export const metadata = {
   title: "Lake Estudio",
@@ -13,8 +13,6 @@ export default function RootLayout({ children }) {
       <body className="antialiased bg-lake-pink min-h-screen flex flex-col">
         
         <Header />
-        
-        {/* El flex-grow hace que el contenido empuje al Footer siempre hacia abajo */}
         <div className="flex-grow">
           {children}
         </div>

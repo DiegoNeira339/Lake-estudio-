@@ -3,7 +3,7 @@ export default function Footer() {
     <footer className="w-full bg-lake-lilac/20 border-t border-lake-lilac/40 py-10 px-6 mt-auto">
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left text-lake-dark">
 
-        {/* 1. Marca y Regla de Oro */}
+      
         <div className="flex flex-col items-center md:items-start gap-2">
           <span className="text-2xl font-extrabold tracking-tight">Lake Estudio 🌸</span>
           <p className="opacity-80 text-sm mt-2 max-w-xs">
@@ -11,7 +11,7 @@ export default function Footer() {
           </p>
         </div>
 
-       {/* 2. Contacto */}
+
         <div className="flex flex-col items-center md:items-start gap-2">
           <h4 className="font-bold text-lg mb-2">Contacto</h4>
           <a 
@@ -32,7 +32,6 @@ export default function Footer() {
           </a>
         </div>
 
-        {/* 3. Ubicación */}
         <div className="flex flex-col items-center md:items-start gap-2">
           <h4 className="font-bold text-lg mb-2">Ubicación</h4>
           <p className="opacity-80 text-sm">
