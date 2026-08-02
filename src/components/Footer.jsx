@@ -22,14 +22,16 @@ export default function Footer() {
           >
             Instagram 
           </a>
-          <a 
+          
+          {/*<a 
             href="https://wa.me/56912345678" 
             target="_blank" 
             rel="noopener noreferrer" 
             className="opacity-80 hover:font-bold hover:scale-105 transition-all"
           >
-            WhatsApp General
-          </a>
+            WhatsApp General, hasta solucion celular, permanecera cerrado por el momento 
+          </a>*/} 
+          
         </div>
 
         <div className="flex flex-col items-center md:items-start gap-2">

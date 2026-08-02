@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import Swal from 'sweetalert2';
+import emailjs from '@emailjs/browser';
 
-// Este es tu diccionario de horarios (puede ir fuera del componente porque nunca cambia)
 const horariosPorDia = {
   0: ["14:00", "16:00", "18:00"], // Domingo
   1: ["14:00", "16:00", "18:00", "20:00"], // Lunes
@@ -14,7 +14,6 @@ const horariosPorDia = {
 };
 
 export default function BookingForm() {
-  // --- 1. ESTADOS (Todos adentro de la función principal) ---
   const [formData, setFormData] = useState({
     servicio: "",
     nombre: "",
@@ -23,13 +22,11 @@ export default function BookingForm() {
   });
   
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Estados para el nuevo calendario
+
   const [reservasOcupadas, setReservasOcupadas] = useState([]);
   const [fechaSeleccionada, setFechaSeleccionada] = useState("");
   const [horaSeleccionada, setHoraSeleccionada] = useState("");
 
-  // --- 2. EL CHISMOSO (Busca las horas tomadas en la BD al cargar la página) ---
   useEffect(() => {
     const cargarReservas = async () => {
       try {
@@ -45,7 +42,6 @@ export default function BookingForm() {
     cargarReservas();
   }, []);
 
-  // --- 3. LÓGICA DEL DÍA SELECCIONADO ---
   let horasDelDiaSeleccionado = [];
   if (fechaSeleccionada) {
     const [year, month, day] = fechaSeleccionada.split('-');
@@ -55,7 +51,6 @@ export default function BookingForm() {
     horasDelDiaSeleccionado = horariosPorDia[numeroDeDia];
   }
 
-  // --- 4. FUNCIONES DEL FORMULARIO ---
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -66,7 +61,6 @@ export default function BookingForm() {
   const handleSubmit = async (e) => {
     e.preventDefault(); 
     
-    // Nueva validación: Asegurarnos de que sí eligieron una hora
     if (!fechaSeleccionada || !horaSeleccionada) {
       Swal.fire({
         title: 'Falta la hora',
@@ -99,7 +93,7 @@ export default function BookingForm() {
         headers: {
           'Content-Type': 'application/json',
         },
-        // Aquí juntamos la fecha y la hora para mandarlas a Supabase
+        
         body: JSON.stringify({
           ...formData,
           fechaHora: `${fechaSeleccionada}T${horaSeleccionada}`
@@ -107,6 +101,27 @@ export default function BookingForm() {
       });
 
       if (response.ok) {
+        
+        try {
+          await emailjs.send(
+            'service_4mib3hr',
+            'template_9i057x4',
+            {
+              nombre: formData.nombre,
+              servicio: formData.servicio,
+              fecha: fechaSeleccionada,
+              hora: horaSeleccionada,
+              whatsapp: formData.whatsapp,
+              email: formData.email
+            },
+            '-NeKFisAL3qSyfkw4'
+          );
+          console.log("¡Correo enviado al administrador con éxito!");
+        } catch (error) {
+          console.error("Falló el envío de correo:", error);
+        }
+       
+
         Swal.fire({
           title: '¡Reserva Enviada!',
           text: `¡Listo ${formData.nombre}! Tu reserva ha sido enviada al estudio. Te contactarán pronto.`,
@@ -115,12 +130,10 @@ export default function BookingForm() {
           confirmButtonText: '¡Súper!'
         });
  
-        // Limpiamos todo el formulario
         setFormData({ servicio: "", nombre: "", whatsapp: "", email: "" });
         setFechaSeleccionada("");
         setHoraSeleccionada("");
-        
-        // Y bloqueamos la hora que acaban de tomar para que no se pueda clickear de nuevo
+
         setReservasOcupadas(prev => [...prev, `${fechaSeleccionada}T${horaSeleccionada}`]);
 
       } else {
@@ -142,7 +155,6 @@ export default function BookingForm() {
     }
   };
 
-  // --- 5. INTERFAZ GRÁFICA ---
   return (
     <section id="agendar" className="w-full max-w-3xl mx-auto px-6 py-16">
       <div className="bg-lake-pink rounded-5xl p-8 md:p-12 shadow-soft border-4 border-lake-white">
@@ -173,7 +185,6 @@ export default function BookingForm() {
             </select>
           </div>
 
-          {/* --- NUEVO SISTEMA DE CALENDARIO --- */}
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <label className="text-lake-dark font-bold ml-2">Elige el Día</label>
@@ -220,7 +231,6 @@ export default function BookingForm() {
               </div>
             )}
           </div>
-          {/* --- FIN NUEVO SISTEMA DE CALENDARIO --- */}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-2">
