@@ -109,8 +109,7 @@ export default function BookingForm() {
             {
               nombre: formData.nombre,
               servicio: formData.servicio,
-              fecha: fechaSeleccionada,
-              hora: horaSeleccionada,
+              fechaHora: `${fechaSeleccionada} a las ${horaSeleccionada}`,
               whatsapp: formData.whatsapp,
               email: formData.email
             },
