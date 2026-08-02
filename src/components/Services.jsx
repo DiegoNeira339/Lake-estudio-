@@ -6,6 +6,30 @@ export default function Services() {
   const [selectedService, setSelectedService] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEndHandler = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) nextMedia();
+    if (isRightSwipe) prevMedia();
+  };
+  // ------------------------------------------------------------------
+
   const servicesList = [
     {
       id: 1,
@@ -49,19 +73,18 @@ export default function Services() {
     }
   ];
 
-  
   const handleOpenModal = (service) => {
     setSelectedService(service);
     setCurrentIndex(0); 
   };
 
   const nextMedia = (e) => {
-    e.stopPropagation(); 
+    if (e) e.stopPropagation(); 
     setCurrentIndex((prev) => (prev === selectedService.gallery.length - 1 ? 0 : prev + 1));
   };
 
   const prevMedia = (e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     setCurrentIndex((prev) => (prev === 0 ? selectedService.gallery.length - 1 : prev - 1));
   };
 
@@ -144,23 +167,30 @@ export default function Services() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSelectedService(null)} 
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer"
+            
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer"
           >
             <motion.div
               layoutId={`tarjeta-${selectedService.id}`} 
               transition={{ type: "spring", stiffness: 350, damping: 25 }}
               onClick={(e) => e.stopPropagation()} 
-              className="bg-lake-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-4xl flex flex-col md:flex-row cursor-default relative"
+              className="bg-lake-white rounded-3xl overflow-y-auto max-h-[90vh] shadow-2xl w-full max-w-4xl flex flex-col md:flex-row cursor-default relative"
             >
               
               <button 
                 onClick={() => setSelectedService(null)}
-                className="absolute top-4 right-4 bg-lake-pink text-lake-dark w-10 h-10 rounded-full flex items-center justify-center font-bold z-20 hover:scale-110 transition-transform"
+                className="fixed top-4 right-4 md:absolute md:top-4 md:right-4 bg-lake-pink text-lake-dark w-10 h-10 rounded-full flex items-center justify-center font-bold z-[120] shadow-md hover:scale-110 transition-transform"
               >
                 ✕
               </button>
 
-              <div className="w-full md:w-1/2 h-64 md:h-auto relative bg-lake-dark group">
+              {/* Contenedor de la imagen con detección de swipe */}
+              <div 
+                className="w-full md:w-1/2 h-64 md:h-auto relative bg-lake-dark group shrink-0"
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEndHandler}
+              >
                 
                 {selectedService.gallery[currentIndex].type === "video" ? (
                   <video key={selectedService.gallery[currentIndex].src} src={selectedService.gallery[currentIndex].src} autoPlay loop muted playsInline className="w-full h-full object-cover" />
@@ -168,20 +198,19 @@ export default function Services() {
                   <img key={selectedService.gallery[currentIndex].src} src={selectedService.gallery[currentIndex].src} alt={selectedService.title} className="w-full h-full object-cover" />
                 )}
 
-                {}
                 {selectedService.gallery.length > 1 && (
                   <>
-                    <button onClick={prevMedia} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-lake-dark w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-md transition-all opacity-0 group-hover:opacity-100">
+                    {/* Flechas ahora visibles siempre en celulares (opacity-100) */}
+                    <button onClick={prevMedia} className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-lake-dark w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-md transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10">
                       ❮
                     </button>
-                    <button onClick={nextMedia} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-lake-dark w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-md transition-all opacity-0 group-hover:opacity-100">
+                    <button onClick={nextMedia} className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-lake-dark w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-md transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10">
                       ❯
                     </button>
 
-                    {/* Puntitos indicadores abajo */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
                       {selectedService.gallery.map((_, i) => (
-                        <div key={i} className={`w-2.5 h-2.5 rounded-full transition-all ${i === currentIndex ? 'bg-lake-pink scale-125' : 'bg-white/50'}`} />
+                        <div key={i} className={`w-2.5 h-2.5 rounded-full transition-all shadow-sm ${i === currentIndex ? 'bg-lake-pink scale-125' : 'bg-white/70'}`} />
                       ))}
                     </div>
                   </>
