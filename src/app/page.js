@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Services from "../components/Services";
-import Nosotros from "../components/Nosotros"; // <-- Aquí importamos tu nuevo componente
 
 export default function Home() {
   return (
@@ -19,9 +18,6 @@ export default function Home() {
           Agendar Cita Ahora
         </Link>
       </section>
-
-      {/* SECCIÓN 2: ACERCA DE NOSOTROS */}
-      <Nosotros />
 
       {/* SECCIÓN 3: SERVICIOS */}
       <Services />

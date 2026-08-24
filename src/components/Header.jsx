@@ -20,7 +20,7 @@ export default function Header() {
         <Link href="/" className="hover:text-white transition-colors">
           Inicio
         </Link>
-        <Link href="/#nosotros" className="hover:text-white transition-colors">
+        <Link href="/nosotros" className="hover:text-white transition-colors">
           Acerca de nosotros
         </Link>
         <Link href="/#servicios" className="hover:text-white transition-colors">
