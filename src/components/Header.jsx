@@ -1,7 +1,15 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from 'next/navigation';
 
 export default function Header() {
+  // 1. Leemos en qué ruta estamos
+  const pathname = usePathname();
+  
+  // 2. Si es la ruta secreta, no mostramos NADA (return null) 🥷
+  if (pathname === '/michimiau') return null;
+
   return (
     <header className="w-full bg-lake-pink px-6 py-4 flex flex-col md:flex-row items-center justify-between shadow-sm gap-4 md:gap-0 sticky top-0 z-50">
       

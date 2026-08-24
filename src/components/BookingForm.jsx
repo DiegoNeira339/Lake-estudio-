@@ -67,18 +67,13 @@ export default function BookingForm() {
 
       if (!response.ok) throw new Error("Fallo en el servidor");
 
-      // 2. Disparador Doble de Correos (Admin y Cliente)
       await Promise.all([
-        // Correo al Admin (Tu novia)
         emailjs.send('service_4mib3hr', 'template_9i057x4', emailPayload, '-NeKFisAL3qSyfkw4'),
-        // Correo al Cliente (Comprobante)
         emailjs.send('service_4mib3hr', 'template_czd9ogi', emailPayload, '-NeKFisAL3qSyfkw4')
       ]).catch(err => console.error("Error EmailJS:", err));
 
-      // 3. Alerta de Éxito
       Swal.fire({ title: '¡Reserva Enviada!', text: `¡Listo ${formData.nombre}! Te contactarán pronto.`, icon: 'success', confirmButtonColor: '#2d3748' });
-      
-      // 4. Limpiar Formulario
+
       setFormData({ servicio: "", nombre: "", whatsapp: "", email: "" });
       setFechaSeleccionada(""); setHoraSeleccionada("");
       setReservasOcupadas(prev => [...prev, fechaHora]);
@@ -90,7 +85,6 @@ export default function BookingForm() {
     }
   };
 
-  // Diccionario para optimizar los inputs de texto
   const inputsTexto = [
     { label: "Nombre completo", type: "text", name: "nombre", placeholder: "Ej: Camila Pérez", divClass: "" },
     { label: "WhatsApp", type: "tel", name: "whatsapp", placeholder: "+56 9 1234 5678", divClass: "" },
