@@ -70,7 +70,7 @@ export default function BookingForm() {
       // 2. Disparador Doble de Correos (Admin y Cliente)
       await Promise.all([
         // Correo al Admin (Tu novia)
-        emailjs.send('service_4mib3hr', 'template_m0nkztq', emailPayload, '-NeKFisAL3qSyfkw4'),
+        emailjs.send('service_4mib3hr', 'template_9i057x4', emailPayload, '-NeKFisAL3qSyfkw4'),
         // Correo al Cliente (Comprobante)
         emailjs.send('service_4mib3hr', 'template_czd9ogi', emailPayload, '-NeKFisAL3qSyfkw4')
       ]).catch(err => console.error("Error EmailJS:", err));
