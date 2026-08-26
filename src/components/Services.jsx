@@ -1,244 +1,140 @@
 "use client";
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function Services() {
-  const [selectedService, setSelectedService] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [servicios, setServicios] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [modalAbierto, setModalAbierto] = useState(null); // Guarda el servicio al que le diste clic
 
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEndHandler = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe) nextMedia();
-    if (isRightSwipe) prevMedia();
-  };
-  // ------------------------------------------------------------------
-
-  const servicesList = [
-    {
-      id: 1,
-      title: "Alisado Profesional",
-      description: "Luce un cabello liso, brillante y sin frizz por meses. Trabajamos con productos de alta calidad.",
-      detalleFull: "Nuestro alisado profesional incluye lavado de limpieza profunda, aplicación del producto alisante, sellado térmico y un masaje capilar de hidratación. Ideal para olvidarte de la plancha.",
-      media: "/alisado_1.mp4",
-      isVideo: true,
-      category: "Pelo",
-      gallery: [
-        { src: "/alisado_1.mp4", type: "video" },
-        { src: "/alisado_2.mp4", type: "video" }
-      ]
-    },
-    {
-      id: 2,
-      title: "Limpieza Facial",
-      description: "Protocolo de 5 pasos para renovar tu rostro. Opción a sumar drenaje o masaje reafirmante.",
-      detalleFull: "El servicio base ($20.000) incluye:\n1. Higiene facial\n2. Exfoliación enzimática\n3. Desincrustación\n4. Mascarilla calmante\n5. Sellado\n\n✨ Extras ($5.000 c/u):\nPuedes complementar tu limpieza con un Drenaje Linfático o un Masaje Integral Reafirmante.",
-      media: "/despues_limpieza.jpeg", 
-      isVideo: false,
-      category: "Estética",
-      gallery: [
-        { src: "/antes_limpieza.jpeg", type: "image" },
-        { src: "/despues_limpieza.jpeg", type: "image" }
-      ]
-    },
-    {
-      id: 3,
-      title: "Diseño de Cejas",
-      description: "Enmarca tu mirada con un perfilado adaptado a la forma y facciones de tu rostro.",
-      detalleFull: "Realizamos un servicio especializado en tus cejas para resaltar tu mirada y armonizar las facciones de tu rostro. Cuidamos cada detalle para entregarte un resultado simétrico, natural y perfecto.",
-      media: "/cejas_3.jpeg", 
-      isVideo: false,
-      category: "Estética",
-      gallery: [
-        { src: "/cejas_3.jpeg", type: "image" },
-        { src: "/cejas_2.jpeg", type: "image" },
-        { src: "/cejas_1.jpeg", type: "image" }
-      ]
-    }
-  ];
-
-  const handleOpenModal = (service) => {
-    setSelectedService(service);
-    setCurrentIndex(0); 
-  };
-
-  const nextMedia = (e) => {
-    if (e) e.stopPropagation(); 
-    setCurrentIndex((prev) => (prev === selectedService.gallery.length - 1 ? 0 : prev + 1));
-  };
-
-  const prevMedia = (e) => {
-    if (e) e.stopPropagation();
-    setCurrentIndex((prev) => (prev === 0 ? selectedService.gallery.length - 1 : prev - 1));
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.2 } }
-  };
-
-  const cardVariants = {
-    hidden: { opacity: 0, y: 50 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
-  };
+  // Cuando la página carga, vamos a buscar los servicios a la base de datos
+  useEffect(() => {
+    const fetchServicios = async () => {
+      try {
+        const res = await fetch('/api/servicios');
+        if (res.ok) {
+          const data = await res.json();
+          setServicios(data);
+        }
+      } catch (error) {
+        console.error("Error cargando servicios:", error);
+      } finally {
+        setCargando(false);
+      }
+    };
+    fetchServicios();
+  }, []);
 
   return (
-    <section id="servicios" className="w-full max-w-6xl mx-auto px-6 py-20 overflow-hidden relative">
-      
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
-        transition={{ duration: 0.6 }}
-        className="text-center mb-16"
-      >
-        <h2 className="text-4xl md:text-5xl font-bold text-lake-dark mb-4">
-          Nuestros Servicios ✨
-        </h2>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Descubre los tratamientos que tenemos para consentirte en nuestro estudio ubicado en Maipú.
-        </p>
-      </motion.div>
+    <section className="py-20 bg-lake-white w-full px-6" id="servicios">
+      <div className="max-w-6xl mx-auto">
+        
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-extrabold text-lake-dark mb-4">Nuestros Servicios 🌸</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+            Descubre todo lo que Lake Estudio tiene para ofrecerte.
+          </p>
+        </div>
 
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, amount: 0.2 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-      >
-        {servicesList.map((service) => (
-          <motion.div 
-            key={service.id} 
-            variants={cardVariants}
-            layoutId={`tarjeta-${service.id}`} 
-            onClick={() => handleOpenModal(service)}
-            className="bg-lake-white rounded-3xl overflow-hidden shadow-soft hover:shadow-md hover:-translate-y-2 transition-transform duration-300 border-2 border-lake-pink flex flex-col cursor-pointer"
-          >
-            <div className="h-48 w-full overflow-hidden relative">
-              <span className="absolute top-4 left-4 bg-lake-matcha text-lake-dark text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm">
-                {service.category}
-              </span>
-              
-              {service.isVideo ? (
-                <video src={service.media} autoPlay loop muted playsInline className="w-full h-full object-cover pointer-events-none" />
-              ) : (
-                <img src={service.media} alt={service.title} className="w-full h-full object-cover" />
-              )}
+        {/* Estado de Carga */}
+        {cargando ? (
+          <div className="text-center text-lake-dark animate-pulse text-xl font-bold py-10">
+            Cargando servicios... ✨
+          </div>
+        ) : servicios.length === 0 ? (
+          <div className="text-center text-gray-500 py-10">
+            Aún no hay servicios disponibles.
+          </div>
+        ) : (
+          /* Grilla de Tarjetas Dinámicas */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {servicios.map(servicio => (
+              <div key={servicio.id} className="bg-white rounded-3xl overflow-hidden shadow-sm border-2 border-lake-pink/20 hover:border-lake-pink transition-all flex flex-col group">
+                
+                {/* Imagen de la Tarjeta */}
+                <div className="h-64 relative overflow-hidden bg-gray-100">
+                  {servicio.foto_url ? (
+                    <img 
+                      src={servicio.foto_url} 
+                      alt={servicio.titulo} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-400">Sin imagen</div>
+                  )}
+                  <span className="absolute top-4 left-4 bg-lake-matcha text-lake-dark text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                    Estética
+                  </span>
+                </div>
+                
+                {/* Textos de la Tarjeta */}
+                <div className="p-8 flex flex-col flex-grow text-center items-center">
+                  <h3 className="text-2xl font-bold text-lake-dark mb-3 capitalize">{servicio.titulo}</h3>
+                  <p className="text-gray-600 mb-6 flex-grow line-clamp-3">
+                    {servicio.descripcion}
+                  </p>
+                  <button 
+                    onClick={() => setModalAbierto(servicio)}
+                    className="text-lake-dark font-bold underline decoration-2 decoration-lake-pink hover:text-pink-600 transition-colors"
+                  >
+                    Ver Detalles
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
+
+      {/* ==============================================
+          EL MODAL (Se abre cuando haces clic en un servicio) 
+          ============================================== */}
+      {modalAbierto && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          {/* Contenedor principal del modal */}
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]">
+            
+            {/* Botón de la X para cerrar */}
+            <button 
+              onClick={() => setModalAbierto(null)} 
+              className="absolute top-4 right-4 bg-white text-lake-dark w-10 h-10 rounded-full flex items-center justify-center font-bold text-xl shadow-md hover:bg-gray-100 z-10 transition-colors"
+            >
+              ✕
+            </button>
+
+            {/* Imagen gigante del Modal */}
+            <div className="h-72 w-full bg-gray-100 relative shrink-0">
+               {modalAbierto.foto_url ? (
+                  <img src={modalAbierto.foto_url} alt={modalAbierto.titulo} className="w-full h-full object-cover" />
+               ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">Sin foto</div>
+               )}
             </div>
 
-            <div className="p-6 flex flex-col flex-grow items-center text-center">
-              <h3 className="text-xl font-bold text-lake-dark mb-3">
-                {service.title}
+            {/* Textos y botón del Modal */}
+            <div className="p-8 overflow-y-auto">
+              <h3 className="text-3xl font-extrabold text-lake-dark mb-4 capitalize">
+                {modalAbierto.titulo}
               </h3>
-              <p className="text-gray-600 text-sm mb-6 flex-grow">
-                {service.description}
+              
+              {/* whitespace-pre-wrap permite que si tu novia apretó 'Enter' en la descripción, se respeten los saltos de línea */}
+              <p className="text-gray-700 text-lg mb-8 leading-relaxed whitespace-pre-wrap">
+                {modalAbierto.descripcion}
               </p>
               
-              <button className="text-lake-dark font-bold underline decoration-lake-pink decoration-4 underline-offset-4 hover:text-lake-pink transition-colors">
-                Ver Detalles
-              </button>
+              <Link 
+                href="/agendar" 
+                onClick={() => setModalAbierto(null)}
+                className="block text-center w-full bg-lake-pink text-lake-dark font-extrabold text-lg py-4 rounded-full hover:bg-pink-300 hover:scale-[1.02] transition-all shadow-md"
+              >
+                📅 Reservar este servicio
+              </Link>
             </div>
-          </motion.div>
-        ))}
-      </motion.div>
 
-      {/* MODAL CON CARRUSEL */}
-      <AnimatePresence>
-        {selectedService && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedService(null)} 
-            
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer"
-          >
-            <motion.div
-              layoutId={`tarjeta-${selectedService.id}`} 
-              transition={{ type: "spring", stiffness: 350, damping: 25 }}
-              onClick={(e) => e.stopPropagation()} 
-              className="bg-lake-white rounded-3xl overflow-y-auto max-h-[90vh] shadow-2xl w-full max-w-4xl flex flex-col md:flex-row cursor-default relative"
-            >
-              
-              <button 
-                onClick={() => setSelectedService(null)}
-                className="fixed top-4 right-4 md:absolute md:top-4 md:right-4 bg-lake-pink text-lake-dark w-10 h-10 rounded-full flex items-center justify-center font-bold z-[120] shadow-md hover:scale-110 transition-transform"
-              >
-                ✕
-              </button>
-
-              {/* Contenedor de la imagen con detección de swipe */}
-              <div 
-                className="w-full md:w-1/2 h-64 md:h-auto relative bg-lake-dark group shrink-0"
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={onTouchEndHandler}
-              >
-                
-                {selectedService.gallery[currentIndex].type === "video" ? (
-                  <video key={selectedService.gallery[currentIndex].src} src={selectedService.gallery[currentIndex].src} autoPlay loop muted playsInline className="w-full h-full object-cover" />
-                ) : (
-                  <img key={selectedService.gallery[currentIndex].src} src={selectedService.gallery[currentIndex].src} alt={selectedService.title} className="w-full h-full object-cover" />
-                )}
-
-                {selectedService.gallery.length > 1 && (
-                  <>
-                    {/* Flechas ahora visibles siempre en celulares (opacity-100) */}
-                    <button onClick={prevMedia} className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-lake-dark w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-md transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10">
-                      ❮
-                    </button>
-                    <button onClick={nextMedia} className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-lake-dark w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-md transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10">
-                      ❯
-                    </button>
-
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                      {selectedService.gallery.map((_, i) => (
-                        <div key={i} className={`w-2.5 h-2.5 rounded-full transition-all shadow-sm ${i === currentIndex ? 'bg-lake-pink scale-125' : 'bg-white/70'}`} />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
-                <span className="bg-lake-matcha text-lake-dark text-xs font-bold px-3 py-1 rounded-full w-max mb-4">
-                  {selectedService.category}
-                </span>
-                <h3 className="text-3xl md:text-4xl font-bold text-lake-dark mb-4 tracking-tight">
-                  {selectedService.title}
-                </h3>
-                <p className="text-gray-600 text-lg mb-8 leading-relaxed whitespace-pre-line">
-                  {selectedService.detalleFull}
-                </p>
-                
-                <a 
-                  href="/agendar" 
-                  className="w-full bg-lake-pink text-lake-dark font-bold text-lg py-4 rounded-full text-center shadow-sm hover:bg-lake-matcha hover:scale-[1.02] transition-all"
-                >
-                  Agendar este Servicio ✨
-                </a>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

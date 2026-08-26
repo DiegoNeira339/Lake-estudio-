@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Services from "../components/Services";
+import GaleriaTrabajos from "../components/GaleriaTrabajos";
 
 export default function Home() {
   return (
@@ -19,8 +20,11 @@ export default function Home() {
         </Link>
       </section>
 
-      {/* SECCIÓN 3: SERVICIOS */}
+      {/* SECCIÓN 2: SERVICIOS */}
       <Services />
+
+      {/* SECCIÓN 3: GALERÍA DE TRABAJOS */} 
+      <GaleriaTrabajos /> 
 
     </main>
   );

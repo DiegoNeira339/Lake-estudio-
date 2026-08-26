@@ -8,39 +8,48 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 
+// 2. SUBIR UNA FOTO (POST)
 export async function POST(request) {
   try {
-    const body = await request.json();
-    console.log("Intentando guardar esta reserva:", body);
+    const formData = await request.formData();
+    const file = formData.get('foto');
+    
+    if (!file) return NextResponse.json({ error: "No hay archivo" }, { status: 400 });
 
-    const { data, error } = await supabase
-      .from('reservas')
-      .insert([
-        {
-          nombre: body.nombre,
-          whatsapp: body.whatsapp,
-          email: body.email,
-          servicio: body.servicio,
-          fecha_hora: body.fechaHora 
-        }
-      ]);
+    // Crear un nombre único
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
 
-    if (error) {
-      console.error("Error de Supabase:", error);
-      throw error;
-    }
+    // === EL TRUCO MÁGICO: Convertir la foto a Buffer ===
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
 
-    return NextResponse.json(
-      { message: "¡Reserva guardada con éxito en la base de datos!" }, 
-      { status: 200 }
-    );
+    // Subir al Storage usando el buffer
+    const { error: uploadError } = await supabase.storage
+      .from('galeria')
+      .upload(fileName, buffer, { 
+        contentType: file.type,
+        upsert: false
+      });
 
+    if (uploadError) throw uploadError;
+
+    // Obtener el link público
+    const { data: { publicUrl } } = supabase.storage
+      .from('galeria')
+      .getPublicUrl(fileName);
+
+    // Guardar el link en la tabla 'galeria'
+    const { error: dbError } = await supabase
+      .from('galeria')
+      .insert([{ url: publicUrl }]);
+
+    if (dbError) throw dbError;
+
+    return NextResponse.json({ message: "Foto subida", url: publicUrl }, { status: 200 });
   } catch (error) {
-    console.error("Error crítico en el backend:", error);
-    return NextResponse.json(
-      { message: "Hubo un error al procesar la reserva" }, 
-      { status: 500 }
-    );
+    console.error("DETALLE DEL ERROR AL SUBIR:", error);
+    return NextResponse.json({ error: "No se pudo subir la foto" }, { status: 500 });
   }
 }
 
