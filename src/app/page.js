@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Services from "../components/Services";
 import GaleriaTrabajos from "../components/GaleriaTrabajos";
+import Faq from '@/components/Faq';
 
 export default function Home() {
   return (
@@ -25,6 +26,8 @@ export default function Home() {
 
       {/* SECCIÓN 3: GALERÍA DE TRABAJOS */} 
       <GaleriaTrabajos /> 
+
+      <Faq />
 
     </main>
   );

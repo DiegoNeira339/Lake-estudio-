@@ -17,26 +17,34 @@ export default function BookingForm() {
   const [formData, setFormData] = useState({ servicio: "", nombre: "", whatsapp: "", email: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [reservasOcupadas, setReservasOcupadas] = useState([]);
+  const [serviciosDisponibles, setServiciosDisponibles] = useState([]); // ✨ NUEVO: El cerebro de los servicios
   const [fechaSeleccionada, setFechaSeleccionada] = useState("");
   const [horaSeleccionada, setHoraSeleccionada] = useState("");
 
   useEffect(() => {
-    const cargarReservas = async () => {
+    const cargarDatos = async () => {
       try {
-        const response = await fetch('/api/reservas');
-        const data = await response.json();
-        
-        if (response.ok && Array.isArray(data)) {
-          setReservasOcupadas(data.map(res => res.fecha_hora));
+        // 1. Cargar las horas ocupadas
+        const resReservas = await fetch('/api/reservas');
+        const dataReservas = await resReservas.json();
+        if (resReservas.ok && Array.isArray(dataReservas)) {
+          setReservasOcupadas(dataReservas.map(res => res.fecha_hora));
+        }
+
+        // 2. Cargar los servicios reales desde Supabase
+        const resServicios = await fetch('/api/servicios');
+        const dataServicios = await resServicios.json();
+        if (resServicios.ok && Array.isArray(dataServicios)) {
+          setServiciosDisponibles(dataServicios);
         }
       } catch (error) {
-        console.error("Error cargando reservas", error);
+        console.error("Error cargando datos", error);
       }
     };
-    cargarReservas();
+    cargarDatos();
   }, []);
 
-  // Cálculo rápido y seguro del día seleccionado (usando mediodía para evitar saltos de zona horaria)
+  // Cálculo rápido y seguro del día seleccionado
   const horasDelDiaSeleccionado = fechaSeleccionada 
     ? horariosPorDia[new Date(`${fechaSeleccionada}T12:00:00`).getDay()] 
     : [];
@@ -99,13 +107,20 @@ export default function BookingForm() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <label className="text-lake-dark font-bold ml-2">¿Qué servicio buscas?</label>
-            <select name="servicio" value={formData.servicio} onChange={handleChange} required className="p-4 rounded-2xl border-none outline-none focus:ring-4 focus:ring-lake-matcha bg-lake-white text-lake-dark font-medium cursor-pointer">
+            <select name="servicio" value={formData.servicio} onChange={handleChange} required className="p-4 rounded-2xl border-none outline-none focus:ring-4 focus:ring-lake-matcha bg-lake-white text-lake-dark font-medium cursor-pointer capitalize">
               <option value="">Selecciona una opción...</option>
-              <optgroup label="Área Pelo"><option value="alisado">Alisado Profesional</option></optgroup>
-              <optgroup label="Área Estética">
-                <option value="limpieza">Limpieza Facial</option>
-                <option value="cejas">Diseño de Cejas</option>
-              </optgroup>
+              
+              {/* ✨ Aquí inyectamos los servicios dinámicos ✨ */}
+              {serviciosDisponibles.length === 0 ? (
+                <option value="" disabled>Cargando servicios...</option>
+              ) : (
+                serviciosDisponibles.map(srv => (
+                  <option key={srv.id} value={srv.titulo} className="capitalize">
+                    {srv.titulo}
+                  </option>
+                ))
+              )}
+
             </select>
           </div>
 
