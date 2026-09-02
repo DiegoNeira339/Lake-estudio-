@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import emailjs from '@emailjs/browser';
 
 const horariosPorDia = {
-  0: [], // Domingo cerrado
+  0: [], 
   1: ["10:30", "13:00", "15:00"], 
   2: ["10:30", "13:00", "15:00"], 
   3: ["10:30", "13:00", "15:00"],
@@ -14,24 +14,23 @@ const horariosPorDia = {
 };
 
 export default function BookingForm() {
-  const [formData, setFormData] = useState({ servicio: "", nombre: "", whatsapp: "", email: "" });
+  const [formData, setFormData] = useState({ nombre: "", whatsapp: "", email: "" });
+  const [serviciosSeleccionados, setServiciosSeleccionados] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [reservasOcupadas, setReservasOcupadas] = useState([]);
-  const [serviciosDisponibles, setServiciosDisponibles] = useState([]); // ✨ NUEVO: El cerebro de los servicios
+  const [serviciosDisponibles, setServiciosDisponibles] = useState([]); 
   const [fechaSeleccionada, setFechaSeleccionada] = useState("");
   const [horaSeleccionada, setHoraSeleccionada] = useState("");
 
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        // 1. Cargar las horas ocupadas
         const resReservas = await fetch('/api/reservas');
         const dataReservas = await resReservas.json();
         if (resReservas.ok && Array.isArray(dataReservas)) {
           setReservasOcupadas(dataReservas.map(res => res.fecha_hora));
         }
 
-        // 2. Cargar los servicios reales desde Supabase
         const resServicios = await fetch('/api/servicios');
         const dataServicios = await resServicios.json();
         if (resServicios.ok && Array.isArray(dataServicios)) {
@@ -44,16 +43,26 @@ export default function BookingForm() {
     cargarDatos();
   }, []);
 
-  // Cálculo rápido y seguro del día seleccionado
   const horasDelDiaSeleccionado = fechaSeleccionada 
     ? horariosPorDia[new Date(`${fechaSeleccionada}T12:00:00`).getDay()] 
     : [];
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  const toggleServicio = (titulo) => {
+    setServiciosSeleccionados(prev => 
+      prev.includes(titulo) 
+        ? prev.filter(s => s !== titulo) 
+        : [...prev, titulo]
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault(); 
     
+    if (serviciosSeleccionados.length === 0) {
+      return Swal.fire({ title: 'Falta el servicio', text: 'Elige al menos un servicio de la lista.', icon: 'warning', confirmButtonColor: '#e53e3e' });
+    }
     if (!fechaSeleccionada || !horaSeleccionada) {
       return Swal.fire({ title: 'Falta la hora', text: 'Elige un día y una hora disponible.', icon: 'warning', confirmButtonColor: '#e53e3e' });
     }
@@ -62,15 +71,16 @@ export default function BookingForm() {
     }
 
     setIsLoading(true);
+    
+    const serviciosString = serviciosSeleccionados.join(", ");
     const fechaHora = `${fechaSeleccionada}T${horaSeleccionada}`;
-    const emailPayload = { ...formData, fechaHora: `${fechaSeleccionada} a las ${horaSeleccionada}` };
+    const emailPayload = { ...formData, servicio: serviciosString, fechaHora: `${fechaSeleccionada} a las ${horaSeleccionada}` };
 
     try {
-      // 1. Guardar en Supabase
       const response = await fetch('/api/reservas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, fechaHora }),
+        body: JSON.stringify({ ...formData, servicio: serviciosString, fechaHora }),
       });
 
       if (!response.ok) throw new Error("Fallo en el servidor");
@@ -82,8 +92,10 @@ export default function BookingForm() {
 
       Swal.fire({ title: '¡Reserva Enviada!', text: `¡Listo ${formData.nombre}! Te contactarán pronto.`, icon: 'success', confirmButtonColor: '#2d3748' });
 
-      setFormData({ servicio: "", nombre: "", whatsapp: "", email: "" });
-      setFechaSeleccionada(""); setHoraSeleccionada("");
+      setFormData({ nombre: "", whatsapp: "", email: "" });
+      setServiciosSeleccionados([]);
+      setFechaSeleccionada(""); 
+      setHoraSeleccionada("");
       setReservasOcupadas(prev => [...prev, fechaHora]);
 
     } catch (error) {
@@ -105,23 +117,24 @@ export default function BookingForm() {
         <h2 className="text-3xl md:text-4xl font-bold text-lake-dark text-center mb-8 tracking-tight">Reserva tu Hora 🗓️</h2>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-lake-dark font-bold ml-2">¿Qué servicio buscas?</label>
-            <select name="servicio" value={formData.servicio} onChange={handleChange} required className="p-4 rounded-2xl border-none outline-none focus:ring-4 focus:ring-lake-matcha bg-lake-white text-lake-dark font-medium cursor-pointer capitalize">
-              <option value="">Selecciona una opción...</option>
-              
-              {/* ✨ Aquí inyectamos los servicios dinámicos ✨ */}
+          
+          <div className="flex flex-col gap-3">
+            <label className="text-lake-dark font-bold ml-2">¿Qué servicios buscas?</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {serviciosDisponibles.length === 0 ? (
-                <option value="" disabled>Cargando servicios...</option>
+                <div className="col-span-full p-4 text-center text-gray-500 bg-lake-white rounded-2xl">Cargando servicios...</div>
               ) : (
                 serviciosDisponibles.map(srv => (
-                  <option key={srv.id} value={srv.titulo} className="capitalize">
-                    {srv.titulo}
-                  </option>
+                  <label key={srv.id} className={`flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${serviciosSeleccionados.includes(srv.titulo) ? 'border-lake-matcha bg-green-50 shadow-sm scale-[1.02]' : 'border-transparent bg-lake-white hover:border-lake-pink'}`}>
+                    <input type="checkbox" className="hidden" checked={serviciosSeleccionados.includes(srv.titulo)} onChange={() => toggleServicio(srv.titulo)} />
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${serviciosSeleccionados.includes(srv.titulo) ? 'bg-lake-matcha border-lake-matcha' : 'border-gray-300'}`}>
+                      {serviciosSeleccionados.includes(srv.titulo) && <span className="text-lake-dark font-bold text-xs">✓</span>}
+                    </div>
+                    <span className="font-medium text-lake-dark capitalize">{srv.titulo}</span>
+                  </label>
                 ))
               )}
-
-            </select>
+            </div>
           </div>
 
           <div className="flex flex-col gap-4">

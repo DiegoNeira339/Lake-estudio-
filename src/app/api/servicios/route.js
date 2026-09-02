@@ -7,108 +7,91 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 1. LEER LOS SERVICIOS (GET)
+const subir = async (file) => {
+  const ext = file.name.split('.').pop();
+  const name = `serv_${Date.now()}_${Math.random().toString(36).substring(5)}.${ext}`;
+  const bytes = await file.arrayBuffer();
+  const { error } = await supabase.storage.from('galeria').upload(name, Buffer.from(bytes), { contentType: file.type });
+  if (error) throw error;
+  return supabase.storage.from('galeria').getPublicUrl(name).data.publicUrl;
+};
+
 export async function GET() {
   try {
     const { data, error } = await supabase.from('servicios').select('*').order('created_at', { ascending: true });
     if (error) throw error;
     return NextResponse.json(data, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: "Error al cargar servicios" }, { status: 500 });
+    return NextResponse.json({ error: "Error" }, { status: 500 });
   }
 }
 
-// 2. CREAR UN NUEVO SERVICIO (POST)
 export async function POST(request) {
   try {
     const formData = await request.formData();
     const titulo = formData.get('titulo');
+    const precio = formData.get('precio');
     const descripcion = formData.get('descripcion');
     const file = formData.get('foto');
+    const fotosExtra = formData.getAll('fotos_extra');
 
     let publicUrl = null;
+    if (file && file.size > 0 && file.name !== 'undefined') publicUrl = await subir(file);
 
-    // Si mandan foto, aplicamos el truco mágico del Buffer y la subimos al bucket 'galeria'
-    if (file && file.size > 0 && file.name !== 'undefined') {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `servicio_${Date.now()}.${fileExt}`;
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const { error: uploadError } = await supabase.storage
-        .from('galeria')
-        .upload(fileName, buffer, { contentType: file.type });
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage.from('galeria').getPublicUrl(fileName);
-      publicUrl = data.publicUrl;
+    let urlsExtra = [];
+    for (const f of fotosExtra) {
+      if (f && f.size > 0 && f.name !== 'undefined') urlsExtra.push(await subir(f));
     }
 
-    const { error: dbError } = await supabase
-      .from('servicios')
-      .insert([{ titulo, descripcion, foto_url: publicUrl }]);
-
-    if (dbError) throw dbError;
-
-    return NextResponse.json({ message: "Servicio creado" }, { status: 200 });
+    const { error } = await supabase.from('servicios').insert([{
+      titulo, precio, descripcion, foto_url: publicUrl, fotos_extra: urlsExtra.length ? urlsExtra.join(',') : null
+    }]);
+    
+    if (error) throw error;
+    return NextResponse.json({ message: "OK" }, { status: 200 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "No se pudo crear" }, { status: 500 });
+    return NextResponse.json({ error: "Error" }, { status: 500 });
   }
 }
 
-// 3. EDITAR UN SERVICIO EXISTENTE (PUT)
 export async function PUT(request) {
   try {
     const formData = await request.formData();
     const id = formData.get('id');
     const titulo = formData.get('titulo');
+    const precio = formData.get('precio');
     const descripcion = formData.get('descripcion');
     const file = formData.get('foto');
     const url_actual = formData.get('foto_url'); 
+    const fotosExtra = formData.getAll('fotos_extra');
+    const urls_actuales = formData.get('fotos_extra_actuales');
 
-    let publicUrl = url_actual; // Por defecto mantenemos la foto que ya tenía
+    let publicUrl = url_actual; 
+    if (file && file.size > 0 && file.name !== 'undefined') publicUrl = await subir(file);
 
-    // Si tu novia decide subir una foto NUEVA para reemplazar la vieja
-    if (file && file.size > 0 && file.name !== 'undefined') {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `servicio_${Date.now()}.${fileExt}`;
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const { error: uploadError } = await supabase.storage
-        .from('galeria')
-        .upload(fileName, buffer, { contentType: file.type });
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage.from('galeria').getPublicUrl(fileName);
-      publicUrl = data.publicUrl;
+    let urlsExtra = urls_actuales ? urls_actuales.split(',').filter(Boolean) : [];
+    for (const f of fotosExtra) {
+      if (f && f.size > 0 && f.name !== 'undefined') urlsExtra.push(await subir(f));
     }
 
-    const { error: dbError } = await supabase
-      .from('servicios')
-      .update({ titulo, descripcion, foto_url: publicUrl })
-      .eq('id', id);
+    const { error } = await supabase.from('servicios').update({
+      titulo, precio, descripcion, foto_url: publicUrl, fotos_extra: urlsExtra.length ? urlsExtra.join(',') : null
+    }).eq('id', id);
 
-    if (dbError) throw dbError;
-
-    return NextResponse.json({ message: "Servicio actualizado" }, { status: 200 });
+    if (error) throw error;
+    return NextResponse.json({ message: "OK" }, { status: 200 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
+    return NextResponse.json({ error: "Error" }, { status: 500 });
   }
 }
 
-// 4. BORRAR UN SERVICIO (DELETE)
 export async function DELETE(request) {
   try {
     const { id } = await request.json();
     const { error } = await supabase.from('servicios').delete().eq('id', id);
     if (error) throw error;
-    return NextResponse.json({ message: "Servicio eliminado" }, { status: 200 });
+    return NextResponse.json({ message: "OK" }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: "Error al eliminar" }, { status: 500 });
+    return NextResponse.json({ error: "Error" }, { status: 500 });
   }
 }
