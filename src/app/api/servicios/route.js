@@ -1,13 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@/lib/supabase/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL, 
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-const subir = async (file) => {
+const subir = async (file, supabase) => {
   const ext = file.name.split('.').pop();
   const name = `serv_${Date.now()}_${Math.random().toString(36).substring(5)}.${ext}`;
   const bytes = await file.arrayBuffer();
@@ -18,6 +13,7 @@ const subir = async (file) => {
 
 export async function GET() {
   try {
+    const supabase = createServerClient();
     const { data, error } = await supabase.from('servicios').select('*').order('created_at', { ascending: true });
     if (error) throw error;
     return NextResponse.json(data, { status: 200 });
@@ -28,6 +24,7 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const supabase = createServerClient();
     const formData = await request.formData();
     const titulo = formData.get('titulo');
     const precio = formData.get('precio');
@@ -36,11 +33,11 @@ export async function POST(request) {
     const fotosExtra = formData.getAll('fotos_extra');
 
     let publicUrl = null;
-    if (file && file.size > 0 && file.name !== 'undefined') publicUrl = await subir(file);
+    if (file && file.size > 0 && file.name !== 'undefined') publicUrl = await subir(file, supabase);
 
     let urlsExtra = [];
     for (const f of fotosExtra) {
-      if (f && f.size > 0 && f.name !== 'undefined') urlsExtra.push(await subir(f));
+      if (f && f.size > 0 && f.name !== 'undefined') urlsExtra.push(await subir(f, supabase));
     }
 
     const { error } = await supabase.from('servicios').insert([{
@@ -56,6 +53,7 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
+    const supabase = createServerClient();
     const formData = await request.formData();
     const id = formData.get('id');
     const titulo = formData.get('titulo');
@@ -67,11 +65,11 @@ export async function PUT(request) {
     const urls_actuales = formData.get('fotos_extra_actuales');
 
     let publicUrl = url_actual; 
-    if (file && file.size > 0 && file.name !== 'undefined') publicUrl = await subir(file);
+    if (file && file.size > 0 && file.name !== 'undefined') publicUrl = await subir(file, supabase);
 
     let urlsExtra = urls_actuales ? urls_actuales.split(',').filter(Boolean) : [];
     for (const f of fotosExtra) {
-      if (f && f.size > 0 && f.name !== 'undefined') urlsExtra.push(await subir(f));
+      if (f && f.size > 0 && f.name !== 'undefined') urlsExtra.push(await subir(f, supabase));
     }
 
     const { error } = await supabase.from('servicios').update({
@@ -87,6 +85,7 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const supabase = createServerClient();
     const { id } = await request.json();
     const { error } = await supabase.from('servicios').delete().eq('id', id);
     if (error) throw error;

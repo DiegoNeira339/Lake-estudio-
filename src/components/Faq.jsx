@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Aquí puedes editar, agregar o quitar preguntas fácilmente
 const preguntasFrecuentes = [
   {
     pregunta: "¿Con cuánto tiempo de anticipación debo agendar?",
@@ -25,16 +25,15 @@ export default function Faq() {
   const [abierto, setAbierto] = useState(null);
 
   const toggleFaq = (index) => {
-    // Si haces clic en el que ya está abierto, se cierra. Si no, abre el nuevo.
     setAbierto(abierto === index ? null : index);
   };
 
   return (
-    <section className="py-20 bg-lake-pink/10 px-6 border-t border-lake-pink/20" id="faq">
+    <section className="py-20 bg-gradient-section px-6 border-t border-lake-pink/20" id="faq">
       <div className="max-w-3xl mx-auto">
         
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-lake-dark mb-4">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-lake-dark mb-4 font-display">
             Preguntas Frecuentes 💬
           </h2>
           <p className="text-gray-600 text-lg">
@@ -46,30 +45,36 @@ export default function Faq() {
           {preguntasFrecuentes.map((faq, index) => (
             <div 
               key={index} 
-              className="bg-white border-2 border-lake-pink/30 rounded-2xl overflow-hidden transition-all duration-300 hover:border-lake-pink shadow-sm"
+              className="bg-white border-2 border-lake-pink/30 rounded-2xl overflow-hidden shadow-sm hover:border-lake-pink/50 transition-all duration-300"
             >
               <button 
                 onClick={() => toggleFaq(index)}
-                className="w-full text-left px-6 py-5 font-bold text-lake-dark flex justify-between items-center focus:outline-none"
+                className="w-full text-left px-6 py-5 font-bold text-lake-dark flex justify-between items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-lake-matcha focus-visible:ring-offset-2"
+                aria-expanded={abierto === index}
               >
                 <span className="text-lg pr-4">{faq.pregunta}</span>
-                <span 
-                  className={`text-xl transition-transform duration-300 ${
-                    abierto === index ? 'rotate-180 text-lake-pink' : 'text-gray-400'
-                  }`}
+                <motion.span
+                  className="text-xl text-gray-400 transition-colors duration-300"
+                  animate={{ rotate: abierto === index ? 180 : 0, color: abierto === index ? '#FFDFEA' : '#9CA3AF' }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
                 >
                   ▼
-                </span>
+                </motion.span>
               </button>
               
-              {/* Contenedor de la respuesta con animación de altura */}
-              <div 
-                className={`px-6 overflow-hidden transition-all duration-500 ease-in-out ${
-                  abierto === index ? 'max-h-40 pb-5 opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <p className="text-gray-600">{faq.respuesta}</p>
-              </div>
+              <AnimatePresence>
+                {abierto === index && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    className="px-6 pb-5"
+                  >
+                    <p className="text-gray-600 leading-relaxed">{faq.respuesta}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ))}
         </div>

@@ -1,8 +1,16 @@
 import "./globals.css";
+import { Playfair_Display } from "next/font/google";
 import Header from "../components/Header";
 import Footer from "../components/Footer"; 
 import { Analytics } from "@vercel/analytics/react"; 
-import FloatingInstagram from "../components/FloatingInstagram"; // ✨ IMPORTAMOS EL BOTÓN ✨
+import FloatingInstagram from "../components/FloatingInstagram";
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-playfair",
+  display: "swap",
+});
 
 export const metadata = {
   title: "Lake Estudio",
@@ -11,7 +19,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es" className="scroll-smooth">
+    <html lang="es" className={`${playfair.variable} scroll-smooth`}>
       <body className="antialiased bg-lake-pink min-h-screen flex flex-col">
         
         <Header />

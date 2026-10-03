@@ -1,15 +1,10 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@/lib/supabase/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-// 1. LEER RESERVAS
 export async function GET() {
   try {
+    const supabase = createServerClient();
     const { data, error } = await supabase.from('reservas').select('*').order('fecha_hora', { ascending: true });
     if (error) throw error;
     return NextResponse.json(data, { status: 200 });
@@ -18,9 +13,9 @@ export async function GET() {
   }
 }
 
-// 2. CREAR RESERVA
 export async function POST(request) {
   try {
+    const supabase = createServerClient();
     const body = await request.json(); 
     
     const { error } = await supabase
@@ -42,9 +37,9 @@ export async function POST(request) {
   }
 }
 
-// 3. EDITAR RESERVA
 export async function PUT(request) {
   try {
+    const supabase = createServerClient();
     const body = await request.json();
     const { error } = await supabase
       .from('reservas')
@@ -58,9 +53,9 @@ export async function PUT(request) {
   }
 }
 
-// 4. BORRAR RESERVA
 export async function DELETE(request) {
   try {
+    const supabase = createServerClient();
     const { id } = await request.json();
     const { error } = await supabase.from('reservas').delete().eq('id', id);
     if (error) throw error;

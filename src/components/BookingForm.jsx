@@ -3,16 +3,6 @@ import { useState, useEffect } from "react";
 import Swal from 'sweetalert2';
 import emailjs from '@emailjs/browser';
 
-const horariosPorDia = {
-  0: [], 
-  1: ["10:30", "13:00", "15:00"], 
-  2: ["10:30", "13:00", "15:00"], 
-  3: ["10:30", "13:00", "15:00"],
-  4: ["11:00", "14:00", "16:00", "18:00", "20:00"],
-  5: ["14:00", "17:00", "20:00"], 
-  6: ["14:00", "17:00", "20:00"],
-};
-
 export default function BookingForm() {
   const [formData, setFormData] = useState({ nombre: "", whatsapp: "", email: "" });
   const [serviciosSeleccionados, setServiciosSeleccionados] = useState([]);
@@ -21,6 +11,8 @@ export default function BookingForm() {
   const [serviciosDisponibles, setServiciosDisponibles] = useState([]); 
   const [fechaSeleccionada, setFechaSeleccionada] = useState("");
   const [horaSeleccionada, setHoraSeleccionada] = useState("");
+  const [horarios, setHorarios] = useState({});
+  const [cargandoInicial, setCargandoInicial] = useState(true);
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -36,15 +28,28 @@ export default function BookingForm() {
         if (resServicios.ok && Array.isArray(dataServicios)) {
           setServiciosDisponibles(dataServicios);
         }
+
+        const resHorarios = await fetch('/api/horarios');
+        const dataHorarios = await resHorarios.json();
+        if (resHorarios.ok && Array.isArray(dataHorarios)) {
+          const grouped = {};
+          dataHorarios.forEach(h => {
+            if (!grouped[h.dia_semana]) grouped[h.dia_semana] = [];
+            grouped[h.dia_semana].push(h.hora_inicio.slice(0, 5));
+          });
+          setHorarios(grouped);
+        }
       } catch (error) {
         console.error("Error cargando datos", error);
+      } finally {
+        setCargandoInicial(false);
       }
     };
     cargarDatos();
   }, []);
 
   const horasDelDiaSeleccionado = fechaSeleccionada 
-    ? horariosPorDia[new Date(`${fechaSeleccionada}T12:00:00`).getDay()] 
+    ? (horarios[new Date(`${fechaSeleccionada}T12:00:00`).getDay()] || [])
     : [];
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -113,19 +118,26 @@ export default function BookingForm() {
 
   return (
     <section id="agendar" className="w-full max-w-3xl mx-auto px-6 py-16">
-      <div className="bg-lake-pink rounded-5xl p-8 md:p-12 shadow-soft border-4 border-lake-white">
-        <h2 className="text-3xl md:text-4xl font-bold text-lake-dark text-center mb-8 tracking-tight">Reserva tu Hora 🗓️</h2>
+      <div className="bg-white/90 backdrop-blur-xl rounded-5xl p-8 md:p-12 shadow-soft border-2 border-lake-pink/30">
+        <h2 className="text-3xl md:text-4xl font-bold text-lake-dark text-center mb-8 tracking-tight font-display">Reserva tu Hora 🗓️</h2>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           
           <div className="flex flex-col gap-3">
             <label className="text-lake-dark font-bold ml-2">¿Qué servicios buscas?</label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {serviciosDisponibles.length === 0 ? (
-                <div className="col-span-full p-4 text-center text-gray-500 bg-lake-white rounded-2xl">Cargando servicios...</div>
+              {cargandoInicial ? (
+                [...Array(6)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 p-4 rounded-2xl border-2 border-lake-pink/10 bg-lake-white">
+                    <div className="w-5 h-5 rounded border-2 skeleton-rounded" />
+                    <div className="h-5 w-3/4 skeleton-text" />
+                  </div>
+                ))
+              ) : serviciosDisponibles.length === 0 ? (
+                <div className="col-span-full p-4 text-center text-gray-500 bg-lake-white rounded-2xl">No hay servicios disponibles</div>
               ) : (
                 serviciosDisponibles.map(srv => (
-                  <label key={srv.id} className={`flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${serviciosSeleccionados.includes(srv.titulo) ? 'border-lake-matcha bg-green-50 shadow-sm scale-[1.02]' : 'border-transparent bg-lake-white hover:border-lake-pink'}`}>
+                  <label key={srv.id} className={`flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${serviciosSeleccionados.includes(srv.titulo) ? 'border-lake-matcha bg-green-50 shadow-sm scale-[1.02] ring-2 ring-lake-matcha ring-offset-2' : 'border-transparent bg-white/50 hover:border-lake-pink/50 backdrop-blur-sm'}`}>
                     <input type="checkbox" className="hidden" checked={serviciosSeleccionados.includes(srv.titulo)} onChange={() => toggleServicio(srv.titulo)} />
                     <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${serviciosSeleccionados.includes(srv.titulo) ? 'bg-lake-matcha border-lake-matcha' : 'border-gray-300'}`}>
                       {serviciosSeleccionados.includes(srv.titulo) && <span className="text-lake-dark font-bold text-xs">✓</span>}
@@ -140,18 +152,24 @@ export default function BookingForm() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <label className="text-lake-dark font-bold ml-2">Elige el Día</label>
-              <input type="date" min={new Date().toISOString().split("T")[0]} value={fechaSeleccionada} onChange={(e) => { setFechaSeleccionada(e.target.value); setHoraSeleccionada(""); }} required className="p-4 rounded-2xl border-none outline-none focus:ring-4 focus:ring-lake-matcha bg-lake-white text-lake-dark cursor-pointer"/>
+              <input type="date" min={new Date().toISOString().split("T")[0]} value={fechaSeleccionada} onChange={(e) => { setFechaSeleccionada(e.target.value); setHoraSeleccionada(""); }} required className="p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-lake-matcha focus:ring-offset-2 bg-white text-lake-dark cursor-pointer" />
             </div>
 
             {fechaSeleccionada && (
               <div className="flex flex-col gap-2 mt-2">
                 <label className="text-lake-dark font-bold ml-2">Elige la Hora</label>
-                {horasDelDiaSeleccionado.length > 0 ? (
+                {cargandoInicial && !horasDelDiaSeleccionado.length ? (
+                  <div className="grid grid-cols-3 md:grid-cols-4 gap-3" aria-busy="true">
+                    {[...Array(8)].map((_, i) => (
+                      <div key={i} className="py-3 rounded-xl skeleton-rounded" />
+                    ))}
+                  </div>
+                ) : horasDelDiaSeleccionado.length > 0 ? (
                   <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
                     {horasDelDiaSeleccionado.map((hora) => {
                       const estaOcupada = reservasOcupadas.includes(`${fechaSeleccionada}T${hora}`);
                       return (
-                        <button key={hora} type="button" disabled={estaOcupada} onClick={() => setHoraSeleccionada(hora)} className={`py-3 rounded-xl font-bold transition-all ${estaOcupada ? "bg-gray-200 text-gray-400 cursor-not-allowed line-through" : horaSeleccionada === hora ? "bg-lake-matcha text-lake-dark shadow-md scale-105" : "bg-lake-white text-lake-dark hover:bg-green-100"}`}>
+                        <button key={hora} type="button" disabled={estaOcupada} onClick={() => setHoraSeleccionada(hora)} className={`py-3 rounded-xl font-bold transition-all ${estaOcupada ? "bg-gray-100 text-gray-400 cursor-not-allowed line-through" : horaSeleccionada === hora ? "bg-lake-matcha text-lake-dark shadow-md ring-2 ring-lake-matcha ring-offset-2" : "bg-white text-lake-dark hover:bg-lake-pink/30 hover:scale-[1.02] border border-lake-pink/20"}`}>
                           {hora}
                         </button>
                       );
@@ -170,12 +188,12 @@ export default function BookingForm() {
             {inputsTexto.map((inp, idx) => (
               <div key={idx} className={`flex flex-col gap-2 ${inp.divClass}`}>
                 <label className="text-lake-dark font-bold ml-2">{inp.label}</label>
-                <input type={inp.type} name={inp.name} value={formData[inp.name]} onChange={handleChange} placeholder={inp.placeholder} required className="p-4 rounded-2xl border-none outline-none focus:ring-4 focus:ring-lake-matcha bg-lake-white text-lake-dark" />
+                <input type={inp.type} name={inp.name} value={formData[inp.name]} onChange={handleChange} placeholder={inp.placeholder} required className="p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-lake-matcha focus:ring-offset-2 bg-white text-lake-dark" />
               </div>
             ))}
           </div>
 
-          <button type="submit" disabled={isLoading} className={`mt-6 py-4 rounded-full font-bold text-lg shadow-sm transition-all ${isLoading ? "bg-gray-400 text-gray-700 cursor-not-allowed" : "bg-lake-matcha text-lake-dark hover:scale-[1.02] hover:shadow-md"}`}>
+          <button type="submit" disabled={isLoading} className={`mt-6 py-4 rounded-full font-bold text-lg shadow-soft transition-all ${isLoading ? "bg-gray-400 text-gray-700 cursor-not-allowed" : "bg-lake-matcha text-lake-dark hover:scale-[1.02] hover:shadow-glow active:scale-[0.98]"}`}>
             {isLoading ? "Enviando reserva... ⏳" : "Confirmar Reserva"}
           </button>
         </form>
